@@ -159,10 +159,10 @@ MonoBehaviour:
     type: 3}
   crossWallPref: {fileID: 1756901166347804770, guid: e5cfbe82da8e5c641906e72224798a92,
     type: 3}
-  start: {fileID: 0}
-  finish: {fileID: 0}
-  mazeHeight: 25
-  mazeWidth: 25
+  start: {fileID: 5357125183701380524, guid: 6d52dc1aa02274c408bb5550b44e4988, type: 3}
+  finish: {fileID: 2005390103034686470, guid: 875c16ea13892024cbec0e2eb77a2f48, type: 3}
+  mazeHeight: 20
+  mazeWidth: 20
 --- !u!1 &519420028
 GameObject:
   m_ObjectHideFlags: 0
@@ -211,7 +211,7 @@ Camera:
     y: 0
     width: 1
     height: 1
-  near clip plane: 0
+  near clip plane: -1
   far clip plane: 1000
   field of view: 60
   orthographic: 1
@@ -276,6 +276,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   mazeGen: {fileID: 312308098}
   cameraController: {fileID: 826642392}
+  player: {fileID: 1859631020314406238, guid: 56cd5bf3767b9c64aa8d0039f2ea1cb9, type: 3}
 --- !u!4 &816801624
 Transform:
   m_ObjectHideFlags: 0

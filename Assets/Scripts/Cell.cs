@@ -1,11 +1,26 @@
 ﻿using System.Collections.Generic;
+using UnityEngine;
 
-class Cell
+public class Cell
 {
-    public void Init(int height, int width)
+    public void UnblockUp()
     {
-        this.height = height;
-        this.width = width;
+        directionBlocks[0] = false;
+    }
+
+    public void UnblockRight()
+    {
+        directionBlocks[1] = false;
+    }
+
+    public void UnblockDown()
+    {
+        directionBlocks[2] = false;
+    }
+
+    public void UnblockLeft()
+    {
+        directionBlocks[3] = false;
     }
 
     public void BlockUp()
@@ -28,6 +43,11 @@ class Cell
         directionBlocks[3] = true;
     }
     
+    public void BlockAll()
+    {
+        directionBlocks = new List<bool> { true, true, true, true };
+    } 
+
     public bool IsBlocked()
     {
         foreach (var block in directionBlocks)
@@ -38,27 +58,36 @@ class Cell
         return true;
     }
 
-    public int GetHeight()
-    {
-        return height;
-    }
-
-    public int GetWidth()
-    {
-        return width;
-    }
-
-    public List<bool> GetDirectionsBlocks()
+    public List<bool> GetDirectionBlocks()
     {
         return directionBlocks;
+    }
+
+    public void SetPointInWorld(Vector2 pointInWorld)
+    {
+        this.pointInWorld = pointInWorld;
+    }
+
+    public Vector2 GetPointInWorld()
+    {
+        return pointInWorld;
+    }
+
+    public void SetIsFinish(bool isFinish)
+    {
+        this.isFinish = isFinish;
+    }
+
+    public bool GetIsFinish()
+    {
+        return isFinish;
     }
 
     #region private
 
     List<bool> directionBlocks = new List<bool>() { false, false, false, false }; //up, right, down, left
-
-    private int width;
-    private int height;
+    private Vector2 pointInWorld;
+    private bool isFinish = false;
 
     #endregion
 }

@@ -5,17 +5,16 @@ class PathFinder
 {
     public PathFinder(int mazeHeight, int mazeWidth, List<List<Vector2>> horizontalWalls, List<List<Vector2>> verticalWalls)
     {
-        this.horizontalWallPoints = horizontalWalls;
-        this.verticalWallPoints = verticalWalls;
+        horizontalWallPoints = horizontalWalls;
+        verticalWallPoints = verticalWalls;
 
         for(int heightIdx = 0; heightIdx < mazeHeight; heightIdx++)
         {
-            cells.Add(new List<Cell>());
+            cellsForGen.Add(new List<Cell>());
 
             for (int widthIdx = 0; widthIdx < mazeWidth; widthIdx++)
             { 
                 var cell = new Cell();
-                cell.Init(heightIdx, widthIdx);
 
                 if (heightIdx == 0)
                     cell.BlockDown();
@@ -26,42 +25,90 @@ class PathFinder
                 if (widthIdx == mazeWidth - 1)
                     cell.BlockRight();
 
-                cells[heightIdx].Add(cell);
+                cellsForGen[heightIdx].Add(cell);
             }
         }
 
-        PassCell(0, 0);
+        for (int heightIdx = 0; heightIdx < mazeHeight * 2 - 1; heightIdx++)
+        {
+            cellsForPlayer.Add(new List<Cell>());
+
+            for (int widthIdx = 0; widthIdx < mazeWidth * 2 - 1; widthIdx++)
+            {
+                var cell = new Cell();
+                cell.BlockAll();
+                cellsForPlayer[heightIdx].Add(cell);
+            }
+        }
     }
 
-    public void MakeMaze()
+    public List<List<Cell>> MakeMaze()
     {
-        int direction = Random.Range(0, 2);
+        PassCell(0, 0);
 
+        int direction = Random.Range(0, 2);
         if (direction == (int)Direction.UP)
-            NextStep(GoUp(cells[0][0]));
+            NextStep(GoUp(cellsForGen[currentHeight][currentWidth]));
         if (direction == (int)Direction.RIGHT)
-            NextStep(GoRight(cells[0][0]));
+            NextStep(GoRight(cellsForGen[currentHeight][currentWidth]));
+
+        finishHeight *= 2;
+        finishWidth *= 2;
+
+        cellsForPlayer[finishHeight][finishWidth].SetIsFinish(true);
+
+        return cellsForPlayer;
+    }
+
+    public Vector2 GetFinishCell()
+    {
+        return new Vector2(finishHeight, finishWidth);
     }
 
     #region Private
 
-    private List<List<Cell>> cells = new List<List<Cell>>();
+    private List<List<Cell>> cellsForGen = new List<List<Cell>>();
+    private List<List<Cell>> cellsForPlayer = new List<List<Cell>>();
     private List<List<Vector2>> horizontalWallPoints;
     private List<List<Vector2>> verticalWallPoints;
+    private int currentHeight = 0;
+    private int currentWidth = 0;
+    private int currentLength = 0;
+    private int maxLength = 0;
+    private int finishHeight = 0;
+    private int finishWidth = 0;
 
     private void NextStep(Cell cell)
     {
-        if (cell.IsBlocked())
-            return;
+        currentLength++;
 
-        int direction = Random.Range(0, 4);
+        if (cell.IsBlocked())
+        {
+            if (maxLength < currentLength)
+            {
+                finishHeight = currentHeight;
+                finishWidth = currentWidth;
+                maxLength = currentLength;
+            }
+            return;
+        }
+                
+        var height = currentHeight;
+        var width = currentWidth;
+
+        var directions = new List<int>();
+        for(int idx = 0; idx < 4; idx++)
+            if (!cell.GetDirectionBlocks()[idx])
+                directions.Add(idx);
+
+        int direction = directions[Random.Range(0, directions.Count)];
 
         bool pass = false;
         while (!pass)
         {
             if (direction == (int)Direction.UP)
             {
-                if (cell.GetDirectionsBlocks()[(int)Direction.UP])
+                if (cell.GetDirectionBlocks()[(int)Direction.UP])
                     direction = (int)Direction.RIGHT;
                 else
                 {
@@ -72,7 +119,7 @@ class PathFinder
 
             if (direction == (int)Direction.RIGHT)
             {
-                if (cell.GetDirectionsBlocks()[(int)Direction.RIGHT])
+                if (cell.GetDirectionBlocks()[(int)Direction.RIGHT])
                     direction = (int)Direction.DOWN;
                 else
                 {
@@ -83,7 +130,7 @@ class PathFinder
 
             if (direction == (int)Direction.DOWN)
             {
-                if (cell.GetDirectionsBlocks()[(int)Direction.DOWN])
+                if (cell.GetDirectionBlocks()[(int)Direction.DOWN])
                     direction = (int)Direction.LEFT;
                 else
                 {
@@ -94,7 +141,7 @@ class PathFinder
 
             if (direction == (int)Direction.LEFT)
             {
-                if (cell.GetDirectionsBlocks()[(int)Direction.LEFT])
+                if (cell.GetDirectionBlocks()[(int)Direction.LEFT])
                     direction = (int)Direction.UP;
                 else
                 {
@@ -103,59 +150,84 @@ class PathFinder
                 }
             }
         }
-        
+
+        currentLength--;
+
         if (cell.IsBlocked())
             return;
+        
+        currentHeight = height;
+        currentWidth = width;
 
         NextStep(cell);
     }
-    
+
     private Cell GoUp(Cell cell)
     {
-        var height = cell.GetHeight();
-        var width = cell.GetWidth();
-        horizontalWallPoints[height][width] = Vector2.zero;
-        PassCell(height + 1, width);
-        return cells[height + 1][width];
+        horizontalWallPoints[currentHeight][currentWidth] = Vector2.zero;
+        
+        cellsForPlayer[currentHeight * 2][currentWidth * 2].UnblockUp();
+        cellsForPlayer[currentHeight * 2 + 1][currentWidth * 2].UnblockDown();
+        cellsForPlayer[currentHeight * 2 + 1][currentWidth * 2].UnblockUp();
+        cellsForPlayer[currentHeight * 2 + 2][currentWidth * 2].UnblockDown();
+
+        currentHeight++;
+        PassCell(currentHeight, currentWidth);
+        return cellsForGen[currentHeight][currentWidth];
     }
 
     private Cell GoDown(Cell cell)
     {
-        var height = cell.GetHeight();
-        var width = cell.GetWidth();
-        horizontalWallPoints[height - 1][width] = Vector2.zero;
-        PassCell(height - 1, width);
-        return cells[height - 1][width];
+        horizontalWallPoints[currentHeight - 1][currentWidth] = Vector2.zero;
+
+        cellsForPlayer[currentHeight * 2][currentWidth * 2].UnblockDown();
+        cellsForPlayer[currentHeight * 2 - 1][currentWidth * 2].UnblockUp();
+        cellsForPlayer[currentHeight * 2 - 1][currentWidth * 2].UnblockDown();
+        cellsForPlayer[currentHeight * 2 - 2][currentWidth * 2].UnblockUp();
+
+        currentHeight--;
+        PassCell(currentHeight, currentWidth);
+        return cellsForGen[currentHeight][currentWidth];
     }
     
     private Cell GoRight(Cell cell)
     {
-        var height = cell.GetHeight();
-        var width = cell.GetWidth();
-        verticalWallPoints[height][width] = Vector2.zero;
-        PassCell(height, width + 1);
-        return cells[height][width + 1];
+        verticalWallPoints[currentHeight][currentWidth] = Vector2.zero;
+
+        cellsForPlayer[currentHeight * 2][currentWidth * 2].UnblockRight();
+        cellsForPlayer[currentHeight * 2][currentWidth * 2 + 1].UnblockLeft();
+        cellsForPlayer[currentHeight * 2][currentWidth * 2 + 1].UnblockRight();
+        cellsForPlayer[currentHeight * 2][currentWidth * 2 + 2].UnblockLeft();
+
+        currentWidth++;
+        PassCell(currentHeight, currentWidth);
+        return cellsForGen[currentHeight][currentWidth];
     }
 
     private Cell GoLeft(Cell cell)
     {
-        var height = cell.GetHeight();
-        var width = cell.GetWidth();
-        verticalWallPoints[height][width - 1] = Vector2.zero;
-        PassCell(height, width - 1);
-        return cells[height][width - 1];
+        verticalWallPoints[currentHeight][currentWidth - 1] = Vector2.zero;
+
+        cellsForPlayer[currentHeight * 2][currentWidth * 2].UnblockLeft();
+        cellsForPlayer[currentHeight * 2][currentWidth * 2 - 1].UnblockRight();
+        cellsForPlayer[currentHeight * 2][currentWidth * 2 - 1].UnblockLeft();
+        cellsForPlayer[currentHeight * 2][currentWidth * 2 - 2].UnblockRight();
+
+        currentWidth--;
+        PassCell(currentHeight, currentWidth);
+        return cellsForGen[currentHeight][currentWidth];
     }
 
     private void PassCell(int height, int width)
     {
         if (height != 0)
-            cells[height - 1][width].BlockUp();
-        if (height != cells.Count - 1)
-            cells[height + 1][width].BlockDown();
+            cellsForGen[height - 1][width].BlockUp();
+        if (height != cellsForGen.Count - 1)
+            cellsForGen[height + 1][width].BlockDown();
         if (width != 0)
-            cells[height][width - 1].BlockRight();
-        if (width != cells[height].Count - 1)
-            cells[height][width + 1].BlockLeft();
+            cellsForGen[height][width - 1].BlockRight();
+        if (width != cellsForGen[height].Count - 1)
+            cellsForGen[height][width + 1].BlockLeft();
     }
 
     #endregion

@@ -4,7 +4,7 @@ using UnityEngine;
 public class MazeGen : MonoBehaviour
 {
     #region Inspector's variables
-    
+
     [SerializeField] private SpriteRenderer horizontalWallPref;
     [SerializeField] private SpriteRenderer crossWallPref;
     [SerializeField] private SpriteRenderer start;
@@ -19,13 +19,12 @@ public class MazeGen : MonoBehaviour
     public void Init()
     {
         widthOfWall = horizontalWallPref.size.x * horizontalWallPref.transform.localScale.x;
-        heightOfWall = horizontalWallPref.size.y * horizontalWallPref.transform.localScale.y;
         widthOfCrossWall = crossWallPref.size.x * crossWallPref.transform.localScale.x;
     }
 
     public float GetMazeHeight()
     {
-        return mazeHeight * (heightOfWall + widthOfCrossWall) + widthOfCrossWall;
+        return mazeHeight * (widthOfWall + widthOfCrossWall) + widthOfCrossWall;
     }
 
     public float GetMazeWidth()
@@ -33,34 +32,70 @@ public class MazeGen : MonoBehaviour
         return mazeWidth * (widthOfWall + widthOfCrossWall) + widthOfCrossWall;
     }
 
-    public void MakeMaze()
+    public List<List<Cell>> GetCellsForPlayer()
     {
+        return cellsForPlayer;
+    }
+
+    public void MakeNewMaze()
+    {
+        horizontalWallPoints = new List<List<Vector2>>();
+        verticalWallPoints = new List<List<Vector2>>();
+        cellsForPlayer = new List<List<Cell>>();
+                
         MakeMazePatternAndAddWallPointsInLists();
         var pathFinder = new PathFinder(mazeHeight, mazeWidth, horizontalWallPoints, verticalWallPoints);
-        pathFinder.MakeMaze();
+        cellsForPlayer = pathFinder.MakeMaze();
+        AddWorldPointsToCells();
         MakeWallsFromLists();
+
+        MakeStart();
+        MakeFinish(pathFinder.GetFinishCell());
     }
 
     #endregion
 
     #region Private
-    
-    private Quaternion ROTATE_TO_VERTICAL = Quaternion.Euler(new Vector3(0, 0, 90));
 
-    private float heightOfWall;
     private float widthOfWall;
     private float widthOfCrossWall;
-    private List<List<Vector2>> horizontalWallPoints = new List<List<Vector2>>();
-    private List<List<Vector2>> verticalWallPoints = new List<List<Vector2>>();
-    
+    private List<List<Vector2>> horizontalWallPoints;
+    private List<List<Vector2>> verticalWallPoints;
+    private List<List<Cell>> cellsForPlayer;
+    private Vector2 spawnPlayerCoord;
+
+    private void MakeStart()
+    {
+        Instantiate(start, CalculatePoint(TypeOfCell.EMPTY_CELL, 0, 0), new Quaternion(), transform);
+    }
+
+    private void MakeFinish(Vector2 cellCoord)
+    {
+        var y = cellCoord.y;
+        var x = cellCoord.x;
+
+        Instantiate(finish, CalculatePoint(TypeOfCell.EMPTY_CELL, y, x), new Quaternion(), transform);
+    }
+
+    private void AddWorldPointsToCells()
+    {
+        for(int heightIdx = 0; heightIdx < cellsForPlayer.Count; heightIdx++)
+        {
+            for (int widthIdx = 0; widthIdx < cellsForPlayer[heightIdx].Count; widthIdx++)
+            {
+                cellsForPlayer[heightIdx][widthIdx].SetPointInWorld(CalculatePoint(TypeOfCell.EMPTY_CELL, widthIdx, heightIdx));
+            }
+        }
+    }
+
     private void MakeWallsFromLists()
     {
-        foreach(var wallPoints in horizontalWallPoints)
+        foreach (var wallPoints in horizontalWallPoints)
         {
-            foreach(var wallPoint in wallPoints)
+            foreach (var wallPoint in wallPoints)
             {
                 if (wallPoint != Vector2.zero)
-                    MakeHorizontalWall(wallPoint);
+                    MakeWall(wallPoint);
             }
         }
 
@@ -69,14 +104,14 @@ public class MazeGen : MonoBehaviour
             foreach (var wallPoint in wallPoints)
             {
                 if (wallPoint != Vector2.zero)
-                    MakeVerticalWall(wallPoint);
+                    MakeWall(wallPoint);
             }
         }
     }
 
     private void MakeMazePatternAndAddWallPointsInLists()
     {
-        for(int heightIdx = 0; heightIdx < mazeHeight + 1; heightIdx++)
+        for (int heightIdx = 0; heightIdx < mazeHeight + 1; heightIdx++)
         {
             if (heightIdx == mazeHeight)
             {
@@ -98,15 +133,15 @@ public class MazeGen : MonoBehaviour
         {
             if (widthIdx == mazeWidth)
             {
-                MakeCrossWall(CalculatePoint(TypeOfWall.CROSS, widthIdx, heightIdx));
+                MakeCrossWall(CalculatePoint(TypeOfCell.CROSS, widthIdx, heightIdx));
                 return;
             }
 
-            MakeCrossWall(CalculatePoint(TypeOfWall.CROSS, widthIdx, heightIdx));
-            var wallPoint = CalculatePoint(TypeOfWall.HORIZONTAL, widthIdx, heightIdx);
+            MakeCrossWall(CalculatePoint(TypeOfCell.CROSS, widthIdx, heightIdx));
+            var wallPoint = CalculatePoint(TypeOfCell.HORIZONTAL, widthIdx, heightIdx);
 
             if (heightIdx == 0 || heightIdx == mazeHeight)
-                MakeHorizontalWall(wallPoint);
+                MakeWall(wallPoint);
             else
                 horizontalWallPoints[heightIdx - 1].Add(wallPoint);
         }
@@ -118,38 +153,34 @@ public class MazeGen : MonoBehaviour
 
         for (int widthIdx = 0; widthIdx < mazeWidth + 1; widthIdx++)
         {    
-            var wallPoint = CalculatePoint(TypeOfWall.VERTICAL, widthIdx, heightIdx);
+            var wallPoint = CalculatePoint(TypeOfCell.VERTICAL, widthIdx, heightIdx);
             if (widthIdx == 0 || widthIdx == mazeWidth)            
-                MakeVerticalWall(wallPoint);
+                MakeWall(wallPoint);
             else      
                 verticalWallPoints[heightIdx].Add(wallPoint);
         }
     }
 
-    private Vector3 CalculatePoint(TypeOfWall type, float widthIdx, float heightIdx)
+    private Vector3 CalculatePoint(TypeOfCell type, float widthIdx, float heightIdx)
     {
-        if (type == TypeOfWall.CROSS)
-            return new Vector3((widthOfCrossWall + widthOfWall) * widthIdx, (widthOfCrossWall + widthOfWall) * heightIdx);
+        if (type == TypeOfCell.CROSS)
+            return new Vector2((widthOfCrossWall + widthOfWall) * widthIdx, (widthOfCrossWall + widthOfWall) * heightIdx);
 
-        if (type == TypeOfWall.HORIZONTAL)
-            return new Vector3(((widthOfCrossWall + widthOfWall) * widthIdx) + widthOfCrossWall, (widthOfCrossWall + widthOfWall) * heightIdx);
+        if (type == TypeOfCell.HORIZONTAL)
+            return new Vector2(((widthOfCrossWall + widthOfWall) * widthIdx) + widthOfCrossWall, (widthOfCrossWall + widthOfWall) * heightIdx);
 
-        if (type == TypeOfWall.VERTICAL)
-            return new Vector3((widthOfCrossWall + widthOfWall) * widthIdx, ((widthOfCrossWall + widthOfWall) * heightIdx) + widthOfCrossWall);
+        if (type == TypeOfCell.VERTICAL)
+            return new Vector2((widthOfCrossWall + widthOfWall) * widthIdx, ((widthOfCrossWall + widthOfWall) * heightIdx) + widthOfCrossWall);
 
-        return Vector3.zero;
+        if (type == TypeOfCell.EMPTY_CELL)
+            return new Vector3(widthOfWall * widthIdx + widthOfCrossWall, widthOfWall * heightIdx + widthOfCrossWall, 1);
+
+        return Vector2.zero;
     }
 
-    private SpriteRenderer MakeHorizontalWall(Vector2 point)
+    private void MakeWall(Vector2 point)
     {
-        return Instantiate(horizontalWallPref, point, new Quaternion(), transform);
-    }
-
-    private SpriteRenderer MakeVerticalWall(Vector2 point)
-    {
-        var wall = Instantiate(horizontalWallPref, point, ROTATE_TO_VERTICAL, transform);
-        wall.flipY = true;
-        return wall;
+        Instantiate(horizontalWallPref, point, new Quaternion(), transform);
     }
 
     private void MakeCrossWall(Vector2 point)
@@ -160,9 +191,10 @@ public class MazeGen : MonoBehaviour
     #endregion
 }
 
-enum TypeOfWall
+enum TypeOfCell
 {
     HORIZONTAL,
     VERTICAL,
-    CROSS
+    CROSS,
+    EMPTY_CELL
 }

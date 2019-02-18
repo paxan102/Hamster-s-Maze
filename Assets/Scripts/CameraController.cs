@@ -1,13 +1,14 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
 
 public class CameraController : MonoBehaviour
 {
-    public void SetupMazeCharacteristics(float mazeHeight, float mazeWidth)
+    public void SetupMazeCharacteristics(float mazeHeight, float mazeWidth, Player player)
     {
         if (!mainCamera)
             mainCamera = Camera.main;
+
+        if (!this.player)
+            this.player = player;
 
         this.mazeWidth = mazeWidth;
 
@@ -20,12 +21,13 @@ public class CameraController : MonoBehaviour
         minY = maxSize;
         maxY = mazeHeight - maxSize;
 
-        mainCamera.gameObject.transform.SetPositionAndRotation(new Vector2(minX, maxY), new Quaternion());
+        mainCamera.gameObject.transform.SetPositionAndRotation(new Vector2(minX, minY), new Quaternion());
     }
 
     #region private
 
     private Camera mainCamera;
+    private Player player;
     private float mazeWidth;
     private float currentSize;
     private float minSize = 1;
@@ -39,7 +41,7 @@ public class CameraController : MonoBehaviour
     {
         float newSize = currentSize + scale;
         if (newSize > maxSize)
-                return;
+            return;
         if (newSize < minSize)
             return;
 
@@ -77,7 +79,7 @@ public class CameraController : MonoBehaviour
             else
                 Scale(-0.2f);
 
-        if (Input.GetKey(KeyCode.W))
+        /*if (Input.GetKey(KeyCode.W))
             dirY = move;
         if (Input.GetKey(KeyCode.A))
             dirX = -move;
@@ -87,19 +89,15 @@ public class CameraController : MonoBehaviour
             dirX = move;
 
         if (dirX == 0 && dirY == 0)
-            return;
+            return;*/
 
-        float newY = mainCamera.gameObject.transform.position.y;
-        float newX = mainCamera.gameObject.transform.position.x;
+        float newY = player.gameObject.transform.position.y;
+        float newX = player.gameObject.transform.position.x;
 
-        if (dirY > 0)
-            newY = Mathf.Min(maxY, mainCamera.gameObject.transform.position.y + dirY);
-        if (dirY < 0)
-            newY = Mathf.Max(minY, mainCamera.gameObject.transform.position.y + dirY);
-        if (dirX > 0)
-            newX = Mathf.Min(maxX, mainCamera.gameObject.transform.position.x + dirX);
-        if (dirX < 0)
-            newX = Mathf.Max(minX, mainCamera.gameObject.transform.position.x + dirX);
+        newY = Mathf.Min(maxY, newY);
+        newY = Mathf.Max(minY, newY);
+        newX = Mathf.Min(maxX, newX);
+        newX = Mathf.Max(minX, newX);
 
         mainCamera.gameObject.transform.SetPositionAndRotation(new Vector2(newX, newY), new Quaternion());
     }
