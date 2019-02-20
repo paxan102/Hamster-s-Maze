@@ -23,8 +23,8 @@ public class GameManager : MonoBehaviour
                 Destroy(obj);
 
         mazeGen.MakeNewMaze();
-        cameraController.SetupMazeCharacteristics(mazeGen.GetMazeHeight(), mazeGen.GetMazeWidth(), player);
-        player.InitAndSpawn(mazeGen.GetCellsForPlayer());
+        cameraController.SetupMazeCharacteristics(mazeGen.GetMazeHeight(), mazeGen.GetMazeWidth(), player.GetPivot());
+        player.InitAndSpawn(mazeGen.GetCellsForPlayer(), mazeGen.GetStartDirection());
     }
 
     private void HandleOnFinish()

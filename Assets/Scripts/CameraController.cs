@@ -2,13 +2,13 @@
 
 public class CameraController : MonoBehaviour
 {
-    public void SetupMazeCharacteristics(float mazeHeight, float mazeWidth, Player player)
+    public void SetupMazeCharacteristics(float mazeHeight, float mazeWidth, Transform playerPivot)
     {
         if (!mainCamera)
             mainCamera = Camera.main;
 
-        if (!this.player)
-            this.player = player;
+        if(!this.playerPivot)
+            this.playerPivot = playerPivot;
 
         this.mazeWidth = mazeWidth;
 
@@ -27,7 +27,7 @@ public class CameraController : MonoBehaviour
     #region private
 
     private Camera mainCamera;
-    private Player player;
+    private Transform playerPivot;
     private float mazeWidth;
     private float currentSize;
     private float minSize = 1;
@@ -66,33 +66,16 @@ public class CameraController : MonoBehaviour
 
     private void Update()
     {
-        float move = 0.15f;
-
-        float dirY = 0;
-        float dirX = 0;
-
         float scroll = Input.GetAxis("Mouse ScrollWheel");
 
         if (scroll != 0)
-            if (scroll > 0)
+            if (scroll < 0)
                 Scale(0.2f);
             else
                 Scale(-0.2f);
 
-        /*if (Input.GetKey(KeyCode.W))
-            dirY = move;
-        if (Input.GetKey(KeyCode.A))
-            dirX = -move;
-        if (Input.GetKey(KeyCode.S))
-            dirY = -move;
-        if (Input.GetKey(KeyCode.D))
-            dirX = move;
-
-        if (dirX == 0 && dirY == 0)
-            return;*/
-
-        float newY = player.gameObject.transform.position.y;
-        float newX = player.gameObject.transform.position.x;
+        float newY = playerPivot.position.y;
+        float newX = playerPivot.position.x;
 
         newY = Mathf.Min(maxY, newY);
         newY = Mathf.Max(minY, newY);

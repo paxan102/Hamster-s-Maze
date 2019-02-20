@@ -32,6 +32,11 @@ public class MazeGen : MonoBehaviour
         return mazeWidth * (widthOfWall + widthOfCrossWall) + widthOfCrossWall;
     }
 
+    public Direction GetStartDirection()
+    {
+        return directionOnStart;
+    }
+
     public List<List<Cell>> GetCellsForPlayer()
     {
         return cellsForPlayer;
@@ -51,6 +56,8 @@ public class MazeGen : MonoBehaviour
 
         MakeStart();
         MakeFinish(pathFinder.GetFinishCell());
+
+        directionOnStart = pathFinder.GetDirectionOnStart();
     }
 
     #endregion
@@ -63,10 +70,11 @@ public class MazeGen : MonoBehaviour
     private List<List<Vector2>> verticalWallPoints;
     private List<List<Cell>> cellsForPlayer;
     private Vector2 spawnPlayerCoord;
+    private Direction directionOnStart;
 
     private void MakeStart()
     {
-        Instantiate(start, CalculatePoint(TypeOfCell.EMPTY_CELL, 0, 0), new Quaternion(), transform);
+        Instantiate(start, CalculatePoint(TypeOfCell.START_FINISH, 0, 0), new Quaternion(), transform);
     }
 
     private void MakeFinish(Vector2 cellCoord)
@@ -74,7 +82,7 @@ public class MazeGen : MonoBehaviour
         var y = cellCoord.y;
         var x = cellCoord.x;
 
-        Instantiate(finish, CalculatePoint(TypeOfCell.EMPTY_CELL, y, x), new Quaternion(), transform);
+        Instantiate(finish, CalculatePoint(TypeOfCell.START_FINISH, y, x), new Quaternion(), transform);
     }
 
     private void AddWorldPointsToCells()
@@ -171,8 +179,11 @@ public class MazeGen : MonoBehaviour
 
         if (type == TypeOfCell.VERTICAL)
             return new Vector2((widthOfCrossWall + widthOfWall) * widthIdx, ((widthOfCrossWall + widthOfWall) * heightIdx) + widthOfCrossWall);
-
+        
         if (type == TypeOfCell.EMPTY_CELL)
+            return new Vector2(widthOfWall * widthIdx + widthOfCrossWall, widthOfWall * heightIdx + widthOfCrossWall);
+
+        if (type == TypeOfCell.START_FINISH)
             return new Vector3(widthOfWall * widthIdx + widthOfCrossWall, widthOfWall * heightIdx + widthOfCrossWall, 1);
 
         return Vector2.zero;
@@ -196,5 +207,6 @@ enum TypeOfCell
     HORIZONTAL,
     VERTICAL,
     CROSS,
+    START_FINISH,
     EMPTY_CELL
 }

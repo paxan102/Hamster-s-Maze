@@ -48,9 +48,15 @@ class PathFinder
 
         int direction = Random.Range(0, 2);
         if (direction == (int)Direction.UP)
+        {
+            directionOnStart = Direction.UP;
             NextStep(GoUp(cellsForGen[currentHeight][currentWidth]));
+        }
         if (direction == (int)Direction.RIGHT)
+        {
+            directionOnStart = Direction.RIGHT;
             NextStep(GoRight(cellsForGen[currentHeight][currentWidth]));
+        }
 
         finishHeight *= 2;
         finishWidth *= 2;
@@ -65,6 +71,11 @@ class PathFinder
         return new Vector2(finishHeight, finishWidth);
     }
 
+    public Direction GetDirectionOnStart()
+    {
+        return directionOnStart;
+    }
+
     #region Private
 
     private List<List<Cell>> cellsForGen = new List<List<Cell>>();
@@ -77,6 +88,7 @@ class PathFinder
     private int maxLength = 0;
     private int finishHeight = 0;
     private int finishWidth = 0;
+    private Direction directionOnStart;
 
     private void NextStep(Cell cell)
     {
@@ -233,7 +245,7 @@ class PathFinder
     #endregion
 }
 
-enum Direction
+public enum Direction
 {
     UP,
     RIGHT,
