@@ -4,11 +4,13 @@ public class GameManager : MonoBehaviour
 {
     [SerializeField] private MazeGen mazeGen;
     [SerializeField] private CameraController cameraController;
+    [SerializeField] private InputSyst input;
     [SerializeField] private Player player;
 
     private void Start()
     {
         player = Instantiate(player);
+        player.InitInputSyst(input);
         player.OnFinish.AddListener(HandleOnFinish);
         mazeGen.Init();
 

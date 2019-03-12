@@ -8,19 +8,21 @@ public class Player : MonoBehaviour
     [HideInInspector] public UnityEvent OnFinish = new UnityEvent();
     [SerializeField] private Transform middlePivot;
     [SerializeField] private float timeBetweenMoves;
+    [SerializeField] private float speed;
 
     public Transform GetPivot()
     {
         return middlePivot;
     }
 
+    public void InitInputSyst(InputSyst input)
+    {
+        this.input = input;
+        input.OnChangeDirection.AddListener(HandleOnDragPointer);
+    }
+
     public void InitAndSpawn(List<List<Cell>> cells, Direction directionOnStart)
     {
-        if (!rb)
-            rb = GetComponent<Rigidbody2D>();
-        if (!animator)
-            animator = GetComponent<Animator>();
-
         if (currentDirection != Direction.DOWN)
         {
             RotateOnDown();
@@ -32,7 +34,6 @@ public class Player : MonoBehaviour
         currentWidth = 0;        
         gameObject.SetActive(true);
         gameObject.transform.position = cells[0][0].GetPointInWorld();
-        //rb.MovePosition(cells[0][0].GetPointInWorld());
 
         if (directionOnStart == Direction.UP)
         {
@@ -45,15 +46,16 @@ public class Player : MonoBehaviour
             currentDirection = Direction.RIGHT;
         }
 
-        Invoke(HANDLE_MOVE, timeBetweenMoves);
+        Invoke(TRY_MOVE, timeBetweenMoves);        
     }
 
     #region private
 
-    private string HANDLE_MOVE = "HandleMove";
-    private string ANIMATE_MOVE = "AnimateMove";
+    private string TRY_MOVE = "TryMove";
+    private string MOVE_WITH_ANIMATE = "MoveWithAnimate";
     private string INVOKE_ON_FINISH = "InvokeOnFinish";
     private string IS_MOVE = "IsMove";
+    private const float TIME_BETWEEN_FRAMES = 0.667f / 24;
     private Vector3 AXE_Z = new Vector3(0, 0, 1);
     private int ROTATE_ON_LEFT = 90;
     private int ROTATE_ON_RIGHT = -90;
@@ -67,7 +69,15 @@ public class Player : MonoBehaviour
     private float currentDeltaY;
     private float currentDeltaX;
     private int currentFrameIdx = 0;
+    private InputSyst input;
+    private bool[] currentInputDirection = { false, false, false, false };
     private Direction currentDirection = Direction.DOWN;
+
+    private void Awake()
+    {
+        rb = GetComponent<Rigidbody2D>();
+        animator = GetComponent<Animator>();
+    }
 
     private void InvokeOnFinish()
     {
@@ -75,25 +85,30 @@ public class Player : MonoBehaviour
         OnFinish.Invoke();
     }
 
-    private void HandleMove()
+    private void HandleOnDragPointer(bool[] directions)
+    {
+        currentInputDirection = directions;
+    }
+
+    private void TryMove()
     {
         int dirY = 0;
         int dirX = 0;
 
         var directionBlocks = cells[currentHeight][currentWidth].GetDirectionBlocks(); //up, right, down, left
 
-        if (Input.GetKey(KeyCode.UpArrow) && !directionBlocks[0])
+        if ((Input.GetKey(KeyCode.UpArrow) || currentInputDirection[0]) && !directionBlocks[0])
             dirY += 1;
-        if (Input.GetKey(KeyCode.RightArrow) && !directionBlocks[1])
+        if ((Input.GetKey(KeyCode.RightArrow) || currentInputDirection[1]) && !directionBlocks[1])
             dirX += 1;
-        if (Input.GetKey(KeyCode.DownArrow) && !directionBlocks[2])
+        if ((Input.GetKey(KeyCode.DownArrow) || currentInputDirection[2]) && !directionBlocks[2])
             dirY -= 1;
-        if (Input.GetKey(KeyCode.LeftArrow) && !directionBlocks[3])
+        if ((Input.GetKey(KeyCode.LeftArrow) || currentInputDirection[3]) && !directionBlocks[3])
             dirX -= 1;
         
         if ((dirX != 0 && dirY != 0) || (dirX == 0 && dirY == 0))
         {
-            Invoke(HANDLE_MOVE, timeBetweenMoves);
+            Invoke(TRY_MOVE, timeBetweenMoves);
             return;
         }
 
@@ -123,24 +138,21 @@ public class Player : MonoBehaviour
         currentWidth += dirX;
         var newPoint = cells[currentHeight][currentWidth].GetPointInWorld();
 
-        currentDeltaY = (newPoint.y - currentPoint.y) / 8;
-        currentDeltaX = (newPoint.x - currentPoint.x) / 8;
-
-        Debug.Log(currentDeltaY);
-        Debug.Log(currentDeltaX);
+        currentDeltaY = (newPoint.y - currentPoint.y) / 6;
+        currentDeltaX = (newPoint.x - currentPoint.x) / 6;
 
         animator.SetBool(IS_MOVE, true);
-        AnimateMove();
+        MoveWithAnimate();
     }
 
-    private void AnimateMove()
+    private void MoveWithAnimate()
     {
         var newY = gameObject.transform.position.y + currentDeltaY;
         var newX = gameObject.transform.position.x + currentDeltaX;
         rb.MovePosition(new Vector2(newX, newY));
         currentFrameIdx++;
 
-        if(currentFrameIdx == 8)
+        if(currentFrameIdx == 6)
         {
             currentFrameIdx = 0;
             currentDeltaY = 0;
@@ -153,11 +165,11 @@ public class Player : MonoBehaviour
                 return;
             }
 
-            Invoke(HANDLE_MOVE, timeBetweenMoves);
+            Invoke(TRY_MOVE, timeBetweenMoves);
             return;
         }
-
-        Invoke(ANIMATE_MOVE, 0.667f / 16);
+        
+        Invoke(MOVE_WITH_ANIMATE, TIME_BETWEEN_FRAMES);
     }
 
     private void RotateOnLeft()
